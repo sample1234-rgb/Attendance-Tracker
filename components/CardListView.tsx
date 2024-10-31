@@ -2,13 +2,19 @@ import { Text, View } from "react-native";
 import { TouchableOpacity } from "react-native-gesture-handler";
 import { useEffect, useState } from "react";
 import ModalView from "./ModalView";
-import { Link } from 'expo-router';
+import { Link } from "expo-router";
 
 export default function CardListView({ props, addAttendence }) {
   const { name: topicName, info: topicProp, time: topicDuration } = props;
   const [isAttended, setIsAttended] = useState(false);
   const pressHandler = async (item: Object) => {
-    setIsAttended(await addAttendence({ ...item, count: item.count + 1 }));
+    setIsAttended(
+      await addAttendence({
+        ...item,
+        count: item?.count + 1,
+        markedDates: [...item?.markedDates, new Date().toISOString().substring(0,10)],
+      })
+    );
     item.count += 1;
     setTimeout(() => setIsAttended(false), 5000);
   };
@@ -21,9 +27,9 @@ export default function CardListView({ props, addAttendence }) {
         flexWrap: "wrap",
         justifyContent: "space-between",
         padding: 5,
-        borderBottomColor:'black',
+        borderBottomColor: "black",
         borderBottomWidth: 1,
-        borderStyle: 'solid'
+        borderStyle: "solid",
       }}
     >
       <View
@@ -36,7 +42,7 @@ export default function CardListView({ props, addAttendence }) {
           padding: 10,
         }}
       >
-        <Link href={{ pathname: 'lectureDetails', params: props }}>
+        <Link href={{ pathname: "lectureDetails", params: props }}>
           <Text>{topicName}</Text>
         </Link>
         <Text>

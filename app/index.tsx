@@ -13,22 +13,16 @@ import {
 } from "react-native";
 import { FlatList, GestureHandlerRootView } from "react-native-gesture-handler";
 import controller from "@/Controller/controller";
-import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
+import { DateTimePickerAndroid, DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import NotFound from "@/components/notFound";
 import Form from "@/components/Form";
-import { Stack, useNavigation, Link } from 'expo-router';
+import { Stack, useNavigation, Link } from "expo-router";
+import HeaderComp from "./header";
+import Topic from "@/constants/DBClass";
+import days from "@/constants/days";
 
-const days = [
-  { name: "S", key: "0", value: "sunday" },
-  { name: "M", key: "1", value: "monday" },
-  { name: "T", key: "2", value: "tuesday" },
-  { name: "W", key: "3", value: "wednesday" },
-  { name: "T", key: "4", value: "thrusday" },
-  { name: "F", key: "5", value: "friday" },
-  { name: "S", key: "6", value: "saturday" },
-];
 export default function Index() {
-  const navigator= useNavigation();
+  const navigator = useNavigation();
   const [topicList, setTopicList] = useState([]);
   const [isEnabled, setIsEnabled] = useState(false);
   const [date, setDate] = useState(new Date());
@@ -40,16 +34,16 @@ export default function Index() {
       (item) => item.key === new Date().getDay().toString()
     )?.value;
     controller
-      .getAttendenceListByDay('monday')
+      .getAttendenceListByDay(day)
       .then((res) => setTopicList(res));
   }, [isEnabled, navigator]);
 
-  const change = (event, selectedDate: Date) => {
+  const change = (event: DateTimePickerEvent, selectedDate: Date) => {
     const currentDate = selectedDate;
     setDate(currentDate);
   };
 
-  const showMode = (currentMode:  'date' | 'time') => {
+  const showMode = (currentMode: "date" | "time") => {
     if (Platform.OS === "android")
       DateTimePickerAndroid.open({
         value: date,
@@ -58,27 +52,57 @@ export default function Index() {
       });
   };
 
-  const showDatepicker = () => {
-    showMode("date");
-  };
+  const showDatepicker = () => showMode("date");
+
   const autoIncrement = async () => {
     if (!isEnabled) {
-      const promises = topicList.map((item: Object) =>
-        controller.updateAttendence({ ...item, count: item?.count + 1 })
-      );
+      const promises = topicList.map((item: Topic) => {
+        const d = new Date().toISOString().substring(0, 10);
+        const newItem = { ...item };
+        if (canAddDate(item, d)) {
+          newItem.count += 1;
+          newItem.markedDates = [...item.markedDates, d];
+        }
+        controller.updateAttendence(newItem);
+      });
       Promise.allSettled(promises)
         .then((results) => {
-          let allUpdated = results.reduce((acc, res) => acc && res?.value, true);
+          let allUpdated = results.reduce(
+            (acc, res) => acc && res?.value,
+            true
+          );
           allUpdated && setIsEnabled(!isEnabled);
         })
         .catch((e) => console.error(e));
     } else setIsEnabled(!isEnabled);
   };
-  const pressHandler = () => {
-    navigator.navigate('dummy');
-  }
+
+  const pressHandler = () => navigator.navigate('dummy'); 
+
+  const canAddDate = (topic: Topic, date: string) => {
+    const newDayNumber = new Date(date).getDay().toString();
+    const newDay = days.filter((day) => day.key === newDayNumber)[0].value;
+    return new Boolean(topic.days.includes(newDay));
+  };
+
+  const markAbsent = () => {
+    const promises = topicList.map((item: Topic) => {
+      const d = new Date().toISOString().substring(0, 10);
+      const newItem = { ...item };
+      if (canAddDate(item, d)) newItem.missedDates = [...item.missedDates, d];
+      controller.updateAttendence(newItem);
+    });
+    Promise.allSettled(promises)
+      .then(results => {
+        let allUpdated = results.reduce((acc: Boolean, res) => acc && res?.value, true);
+        allUpdated && setIsEnabled(!isEnabled);
+      })
+      .catch((e) => console.error(e));
+  };
+  // markAbsent();
   return (
     <>
+      <HeaderComp />
       {topicList.length ? (
         <View
           style={{
@@ -86,13 +110,11 @@ export default function Index() {
           }}
         >
           <Switch value={isEnabled} onValueChange={autoIncrement} />
-          <GestureHandlerRootView
-            style={styles.flexBox}
-          >
+          <GestureHandlerRootView style={styles.flexBox}>
             <FlatList
               style={{ width: "100%" }}
               data={topicList}
-              keyExtractor={(item) => item.id}
+              keyExtractor={(item: Topic) => item.id}
               renderItem={({ item }) => (
                 <CardListView
                   props={item}
@@ -102,15 +124,20 @@ export default function Index() {
             />
           </GestureHandlerRootView>
 
-          {Platform.OS !== "web" && (
+          {Platform.OS === "web" ? (
+            <>
+              <input
+                type="date"
+                onChange={(e) => console.log(e.target.value)}
+              />
+            </>
+          ) : (
             <>
               <Button onPress={showDatepicker} title="Show date picker!" />
             </>
           )}
           <Text>selected: {date.toLocaleString()}</Text>
-          {Platform.OS === "web" && (
-            <input type="date" onChange={(e) => console.log(e.target.value)} />
-          )}
+
           <ModalView
             visible={modalShow}
             modalCloseHandler={() => setModalShow(false)}
@@ -118,8 +145,7 @@ export default function Index() {
             <Form onSubmit={controller.saveTopic} />
           </ModalView>
           <Button onPress={() => setModalShow(true)} title="Add Lecture" />
-          <Link href={{ pathname: 'timetable' }}>Go to Timetable</Link>
-          
+          <Link href={{ pathname: "/timetable" }}>Go to Timetable</Link>
         </View>
       ) : (
         <NotFound />
@@ -145,5 +171,5 @@ const styles = StyleSheet.create({
     width: "100%",
     justifyContent: "center",
     alignItems: "center",
-  }
+  },
 });

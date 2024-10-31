@@ -18,6 +18,7 @@ import { useLocalSearchParams, useNavigation, Link } from "expo-router";
 import days from "@/constants/days";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import CalenderView from "@/components/CalenderView";
+import FilterBox from "@/components/filterBox";
 
 const daysOfWeek = days;
 
@@ -59,7 +60,11 @@ export default function LectureDetails() {
       setInputVal(topic.info.toString());
     }
   }, [topic]);
-
+  const counters = [
+    topic.markedDates.toString().split(",").length,
+    topic.missedDates.toString().split(",").length,
+    topic.extraClasses.toString().split(",").length,
+  ];
   const toggleEditMode = (mode: Boolean) => setEditMode(mode.valueOf());
   const extractLocaleTime = (timeVar: String) => {
     return parseInt(timeVar?.substring(0, 2)) > 12
@@ -239,7 +244,13 @@ export default function LectureDetails() {
             }}
           >
             <Text style={styles.field}>Attended: </Text>
-            <TouchableOpacity><Text>{topic.count}</Text></TouchableOpacity>
+            <FilterBox listOfItems={counters}>
+              {counters.map((item) => (
+                <TouchableOpacity>
+                  <Text>{item}</Text>
+                </TouchableOpacity>
+              ))}
+            </FilterBox>
           </View>
           <View
             style={{
@@ -324,13 +335,19 @@ export default function LectureDetails() {
             }}
           >
             <Text style={styles.field}>Attended:</Text>
-            <Text>{topic.count}</Text>
+            <FilterBox listOfItems={counters}>
+              {counters.map((item) => (
+                <TouchableOpacity>
+                  <Text>{item}</Text>
+                </TouchableOpacity>
+              ))}
+            </FilterBox>
           </View>
           <View
             style={{
               ...styles.flexContainer,
               marginVertical: 10,
-              alignItems:'center',
+              alignItems: "center",
               justifyContent: "space-between",
             }}
           >
@@ -383,10 +400,14 @@ export default function LectureDetails() {
           </View>
         </View>
       )}
-      <CalenderView />
+      <CalenderView item={topic} />
       <View>
-        <View><Text>1</Text></View>
-        <View><Text>2</Text></View>
+        <View>
+          <Text>1</Text>
+        </View>
+        <View>
+          <Text>2</Text>
+        </View>
       </View>
       <ModalView
         visible={modalShow}
