@@ -6,12 +6,15 @@ import {
   Button,
   TouchableOpacity,
   Platform,
+  Switch,
+  SwitchComponent,
 } from "react-native";
 import { useState } from "react";
 import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import days from "@/constants/days";
+import CheckBox from "./checkBox";
 
-export default function Form({ onSubmit }) {
+export default function Form({ onSubmit }: {onSubmit: any}) {
   let newTopic = {
     name: "",
     info: "",
@@ -22,6 +25,7 @@ export default function Form({ onSubmit }) {
   const [endTime, setEndTime] = useState("17:00");
   const [mobileTime, setMobileTime] = useState(0);
   const [day, setDay] = useState(new Array<string>());
+  const [isChecked, setIsChecked] = useState(false);
   const markDay = (selected: string) => {
     let newDays = day.includes(selected)
       ? day.filter(item => item !== selected)
@@ -133,6 +137,7 @@ export default function Form({ onSubmit }) {
           })}
         </View>
       </View>
+      <CheckBox />
       <Button onPress={saveTopic} title="Add Topic" />
     </View>
   );

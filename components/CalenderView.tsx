@@ -4,15 +4,17 @@ import { useState } from "react";
 import ModalView from "./ModalView";
 import controller from "@/Controller/controller";
 import FilterBox from "./filterBox";
+import { monthDays, TODAY } from "@/constants/days";
+import { opacity } from "react-native-reanimated/lib/typescript/reanimated2/Colors";
 // import { TouchableOpacity } from "react-native-gesture-handler";
 interface style {
-  string: object
+  string: object;
 }
 const filters = [
-  {key: '0', name: 'Hi'},
-  {key: '1', name: 'Bob'},
-]
-const holidays = {
+  { key: "0", name: "Hi" },
+  { key: "1", name: "Bob" },
+];
+let holidays = {
   "2024-09-29": { textColor: "#ff000050" },
   "2024-10-05": { textColor: "red" },
   "2024-10-06": { textColor: "red" },
@@ -22,7 +24,6 @@ const holidays = {
   "2024-10-20": { textColor: "red" },
   "2024-10-26": { textColor: "red" },
   "2024-10-27": { textColor: "red" },
-  "2024-11-02": { textColor: "#ff000050" },
 };
 const selectedDateStyle = {
   color: "green",
@@ -39,11 +40,42 @@ const extraDateStyle = {
 const selectedDisabledDateStyle = {
   color: "#00ff0050",
 };
+const changeDisabledSytle = (styled={}, apply=true, opacity='50' ) => {
+  Object.keys(styled).forEach(style => {
+    if(style.includes('color')){
+      let temp = styled[style];
+      if( apply )
+        temp = temp + opacity;
+      else
+        temp = temp.substring(0,7);
+      styled[style] = temp;
+    }
+  })
+  return styled;
+}
+const findHolidays = (month = TODAY.getMonth() + 1) => {
+  let firstDay = new Date(
+    `${TODAY.getFullYear()}-${month.toString().padStart(2, "0")}-01`
+  );
+  let day = firstDay.getDay();
+  let currMonth = monthDays.find((date) => date.number === month);
+  const weekends = {};
+  let l = "";
+  for (let i = 1; i <= currMonth?.totalDays; i++) {
+    if (day % 6 === 0)
+      l = `${firstDay.getFullYear()}-${(firstDay.getMonth() + 1)
+        .toString()
+        .padStart(2, "0")}-${i.toString().padStart(2, "0")}`;
+    weekends[l] = { textColor: "red" };
+    day = (day + 1) % 7;
+  }
+  return weekends;
+};
 const makeMarkStyling = (dates: Array<string>, customStyle: Object) => {
   let t = new Object();
   dates.forEach((date) => {
     let tt = customStyle;
-    if (date.substring(5, 7) !== "10") {
+    if (date.substring(5, 7) !== (TODAY.getMonth() + 1).toString()) {
       tt.disabled = true;
       tt = { ...tt, ...selectedDisabledDateStyle };
     }
@@ -73,13 +105,12 @@ const defineStyles = (styles: object, dates: Array<string>) => {
     else if (nxExist)
       // this is starting day
       temp = { ...temp, startingDay: true };
-
     styles[key] = temp;
   });
 
   return styles;
 };
-export default function CalenderView({ item }) {
+export default function CalenderView({ item }: { item: any }) {
   const [modal, setModal] = useState(false);
   const [modalData, setModalData] = useState("");
   const markedDates = item.markedDates.toString().split(",");
@@ -102,27 +133,31 @@ export default function CalenderView({ item }) {
     newItem.markedDates = markedDates.filter((date: string) => date !== day);
     newItem.missedDates = missedDates.filter((date: string) => date !== day);
     newItem.extraClasses = extraDates.filter((date: string) => date !== day);
-    switch(style){
-      case 1: newItem.markedDates.push(day);
-      break;
-      case 2: newItem.missedDates.push(day);
-      break;
-      case 3: newItem.extraClasses.push(day);
-      break;
-      default: console.log('do nothing');
-      break;
+    switch (style) {
+      case 1:
+        newItem.markedDates.push(day);
+        break;
+      case 2:
+        newItem.missedDates.push(day);
+        break;
+      case 3:
+        newItem.extraClasses.push(day);
+        break;
+      default:
+        console.log("do nothing");
+        break;
     }
-    controller.updateAttendence(newItem).then(res => setModal(false)).catch(e => console.error(e));
+    controller
+      .updateAttendence(newItem)
+      .then((res) => setModal(false))
+      .catch((e) => console.error(e));
   };
+  holidays = { ...holidays, ...findHolidays() };
   return (
     <View style={styles.calendarArea}>
       <Calendar
         markingType={"period"}
         markedDates={{
-          "2024-10-04": {
-            disabled: true,
-            textColor: "green",
-          },
           ...holidays,
           ...t,
           ...ed,

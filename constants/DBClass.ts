@@ -3,7 +3,6 @@ export default interface Topic {
     info: string;
     time: string;
     id: string;
-    count: number;
     days: Array<string>;
     markedDates: Array<string>;
     missedDates: Array<string>;

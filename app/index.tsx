@@ -13,20 +13,28 @@ import {
 } from "react-native";
 import { FlatList, GestureHandlerRootView } from "react-native-gesture-handler";
 import controller from "@/Controller/controller";
-import { DateTimePickerAndroid, DateTimePickerEvent } from "@react-native-community/datetimepicker";
+import {
+  DateTimePickerAndroid,
+  DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
 import NotFound from "@/components/notFound";
 import Form from "@/components/Form";
 import { Stack, useNavigation, Link } from "expo-router";
 import HeaderComp from "./header";
 import Topic from "@/constants/DBClass";
-import days from "@/constants/days";
-
+import days, { User } from "@/constants/days";
+import UserForm, { UserLoginForm } from "@/components/UserForm";
+import MultiFilter from "@/components/MultiFilter";
+interface UserCred {
+  id: string;
+  password: string;
+}
 export default function Index() {
   const navigator = useNavigation();
   const [topicList, setTopicList] = useState([]);
   const [isEnabled, setIsEnabled] = useState(false);
-  const [date, setDate] = useState(new Date());
   const [modalShow, setModalShow] = useState(false);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     navigator.setOptions({ title: "Today's Schedule" });
@@ -34,25 +42,9 @@ export default function Index() {
       (item) => item.key === new Date().getDay().toString()
     )?.value;
     controller
-      .getAttendenceListByDay(day)
+      .getAttendenceListByDay('monday')
       .then((res) => setTopicList(res));
   }, [isEnabled, navigator]);
-
-  const change = (event: DateTimePickerEvent, selectedDate: Date) => {
-    const currentDate = selectedDate;
-    setDate(currentDate);
-  };
-
-  const showMode = (currentMode: "date" | "time") => {
-    if (Platform.OS === "android")
-      DateTimePickerAndroid.open({
-        value: date,
-        onChange: change,
-        mode: currentMode,
-      });
-  };
-
-  const showDatepicker = () => showMode("date");
 
   const autoIncrement = async () => {
     if (!isEnabled) {
@@ -77,7 +69,7 @@ export default function Index() {
     } else setIsEnabled(!isEnabled);
   };
 
-  const pressHandler = () => navigator.navigate('dummy'); 
+  // const pressHandler = () => navigator.navigate('/dummy');
 
   const canAddDate = (topic: Topic, date: string) => {
     const newDayNumber = new Date(date).getDay().toString();
@@ -93,13 +85,55 @@ export default function Index() {
       controller.updateAttendence(newItem);
     });
     Promise.allSettled(promises)
-      .then(results => {
-        let allUpdated = results.reduce((acc: Boolean, res) => acc && res?.value, true);
+      .then((results) => {
+        let allUpdated = results.reduce(
+          (acc: Boolean, res) => acc && res?.value,
+          true
+        );
         allUpdated && setIsEnabled(!isEnabled);
       })
       .catch((e) => console.error(e));
   };
   // markAbsent();
+  const login = async (userCred: UserCred) => {
+    await controller
+      .login(userCred)
+      .then((res) =>
+        controller
+          .getUser(res)
+          .then((res) => {
+            setUser(res);
+            setModalShow(false);
+          })
+          .catch((e) => console.error(e))
+      )
+      .catch((e) => console.error(e));
+    // console.table(user);
+  };
+  const signUp = async (userCred: User) => {
+    await controller
+      .createUser(userCred)
+      .then((res) => setUser(userCred))
+      .catch((e) => console.error(e));
+    console.table(user);
+  };
+  // login({
+  //   password: "admin",
+  //   id: "superadmin@hello.in",
+  // });
+  // signUp({
+  //   id: "3",
+  //   firstName: "Aadmin",
+  //   password: "Aadmin",
+  //   type: "admin",
+  //   lastName: "",
+  //   age: 1,
+  //   courses: [0, 1],
+  //   dob: "01-02-3456",
+  //   email: "AAsuperadmin@hello.in",
+  //   username: "sAuper-admin",
+  //   contact: "1234567891",
+  // })
   return (
     <>
       <HeaderComp />
@@ -124,28 +158,22 @@ export default function Index() {
             />
           </GestureHandlerRootView>
 
-          {Platform.OS === "web" ? (
-            <>
-              <input
-                type="date"
-                onChange={(e) => console.log(e.target.value)}
-              />
-            </>
-          ) : (
-            <>
-              <Button onPress={showDatepicker} title="Show date picker!" />
-            </>
-          )}
-          <Text>selected: {date.toLocaleString()}</Text>
-
           <ModalView
             visible={modalShow}
             modalCloseHandler={() => setModalShow(false)}
           >
             <Form onSubmit={controller.saveTopic} />
+            {/* <UserLoginForm onSubmit={login} /> */}
           </ModalView>
+          {/* <MultiFilter listOfItems={['1','2','3']}/> */}
           <Button onPress={() => setModalShow(true)} title="Add Lecture" />
           <Link href={{ pathname: "/timetable" }}>Go to Timetable</Link>
+          {user === null && (
+            <Button
+              onPress={() => setModalShow(true)}
+              title="Sign In / Sign Up"
+            />
+          )}
         </View>
       ) : (
         <NotFound />

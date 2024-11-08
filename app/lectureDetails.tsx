@@ -15,13 +15,27 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import controller from "@/Controller/controller";
 import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import { useLocalSearchParams, useNavigation, Link } from "expo-router";
-import days from "@/constants/days";
+import days, { Day } from "@/constants/days";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import CalenderView from "@/components/CalenderView";
 import FilterBox from "@/components/filterBox";
+import { filterBoxStyles } from "@/assets/styles";
 
 const daysOfWeek = days;
-
+interface Counter {
+  key: string;
+  text: string;
+  count: number;
+}
+interface AlertType{
+  text: string;
+  onPress: Function;
+}
+interface AlertItem {
+    title: string;
+    message: string,
+    options: Array<AlertType>;
+}
 export default function LectureDetails() {
   const navigator = useNavigation();
   const [topic, setTopic] = useState(useLocalSearchParams());
@@ -60,10 +74,23 @@ export default function LectureDetails() {
       setInputVal(topic.info.toString());
     }
   }, [topic]);
+
   const counters = [
-    topic.markedDates.toString().split(",").length,
-    topic.missedDates.toString().split(",").length,
-    topic.extraClasses.toString().split(",").length,
+    {
+      key: "0",
+      text: "Attended",
+      count: topic.markedDates.toString().split(",").length,
+    },
+    {
+      key: "1",
+      text: "Missed",
+      count: topic.missedDates.toString().split(",").length,
+    },
+    {
+      key: "2",
+      text: "Extra",
+      count: topic.extraClasses.toString().split(",").length,
+    },
   ];
   const toggleEditMode = (mode: Boolean) => setEditMode(mode.valueOf());
   const extractLocaleTime = (timeVar: String) => {
@@ -79,7 +106,7 @@ export default function LectureDetails() {
     options: Array<Object>
   ) => {
     if (Platform.OS === "web") {
-      setAlertProps({ title: title, message: message, options: options });
+      // setAlertProps({ title: title, message: message, options: options });
       setModalShow(true);
       return true;
     } else return Alert.alert(title, message, options);
@@ -164,8 +191,8 @@ export default function LectureDetails() {
   };
 
   return (
-    <>
-      {editMode ? (
+    <View style={{ flex: 1 }}>
+      { editMode ? (
         <View
           style={{
             padding: 10,
@@ -244,10 +271,10 @@ export default function LectureDetails() {
             }}
           >
             <Text style={styles.field}>Attended: </Text>
-            <FilterBox listOfItems={counters}>
-              {counters.map((item) => (
+            <FilterBox>
+              {counters.map((item: Counter) => (
                 <TouchableOpacity>
-                  <Text>{item}</Text>
+                  <Text>{item.count}</Text>
                 </TouchableOpacity>
               ))}
             </FilterBox>
@@ -282,7 +309,7 @@ export default function LectureDetails() {
                       }}
                       onPress={() => handleDay(item.value)}
                     >
-                      <Text>{item.name}</Text>
+                      <center><Text>{item.name}</Text></center>
                     </TouchableOpacity>
                   );
                 })}
@@ -332,37 +359,49 @@ export default function LectureDetails() {
               ...styles.flexContainer,
               marginVertical: 10,
               justifyContent: "space-between",
+              alignItems: "center",
             }}
           >
             <Text style={styles.field}>Attended:</Text>
-            <FilterBox listOfItems={counters}>
-              {counters.map((item) => (
-                <TouchableOpacity>
-                  <Text>{item}</Text>
-                </TouchableOpacity>
-              ))}
+            <FilterBox>
+              {counters.map((item: Counter) => {
+                const currentStyle =
+                  item.key === "0"
+                    ? {
+                        ...filterBoxStyles.flexItem,
+                        ...filterBoxStyles.activate,
+                      }
+                    : filterBoxStyles.flexItem;
+                return (
+                  <>
+                    <TouchableOpacity style={currentStyle}>
+                      <Text>
+                        {item.text}: {item.count}
+                      </Text>
+                    </TouchableOpacity>
+                    {item.key === (counters.length - 1).toString() ? (
+                      <></>
+                    ) : (
+                      <hr />
+                    )}
+                  </>
+                );
+              })}
             </FilterBox>
           </View>
           <View
             style={{
               ...styles.flexContainer,
-              marginVertical: 10,
               alignItems: "center",
               justifyContent: "space-between",
             }}
           >
             <Text style={styles.field}>Assigned: </Text>
-            <View
-              style={{
-                padding: 5,
-                width: "fit-content",
-              }}
-            >
+            <View style={styles.dayView}>
               <View style={styles.flexContainer}>
-                {daysOfWeek.map((item) => {
+                {daysOfWeek.map((item: Day) => {
                   return (
                     <TouchableOpacity
-                      key={(item) => item.key}
                       style={{
                         ...styles.day,
                         borderColor: days.includes(item.value)
@@ -373,7 +412,7 @@ export default function LectureDetails() {
                           : "",
                       }}
                     >
-                      <Text>{item.name}</Text>
+                      <center><Text>{item.name}</Text></center>
                     </TouchableOpacity>
                   );
                 })}
@@ -399,14 +438,20 @@ export default function LectureDetails() {
             </View>
           </View>
         </View>
-      )}
-      <CalenderView item={topic} />
-      <View>
-        <View>
-          <Text>1</Text>
-        </View>
-        <View>
-          <Text>2</Text>
+      ) }
+      <View style={styles.flexContainer}>
+        <CalenderView item={topic} />
+        <View style={styles.flexContainer}>
+          <View>
+            <MaterialCommunityIcons name="image-text" size={24} color="black" />
+          </View>
+          <View>
+            <MaterialCommunityIcons
+              name="image-filter-center-focus-strong"
+              size={24}
+              color="black"
+            />
+          </View>
         </View>
       </View>
       <ModalView
@@ -418,7 +463,7 @@ export default function LectureDetails() {
           <View style={styles.flexContainer}>
             {alertProps?.options.map((option: Object, index: number) => (
               <Button
-                key={(index) => index.toString()}
+                key={index.toString()}
                 onPress={option?.onPress}
                 title={option?.title}
               />
@@ -426,7 +471,7 @@ export default function LectureDetails() {
           </View>
         </View>
       </ModalView>
-    </>
+    </View>
   );
 }
 const styles = StyleSheet.create({
@@ -458,6 +503,10 @@ const styles = StyleSheet.create({
   field: {
     fontSize: 16,
     fontWeight: "bold",
+  },
+  dayView: {
+    padding: 5,
+    width: "fit-content",
   },
 });
 // useEffect(() => {

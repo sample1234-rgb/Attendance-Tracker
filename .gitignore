@@ -12,7 +12,8 @@ npm-debug.*
 *.mobileprovision
 *.orig.*
 web-build/
-
+.vscode/
+.gitignore
 # macOS
 .DS_Store
 

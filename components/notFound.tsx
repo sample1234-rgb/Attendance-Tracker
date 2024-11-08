@@ -8,7 +8,7 @@ export default function NotFound() {
         alignItems: "center",
       }}
     >
-      <Text>Not Found !!</Text>
+      <Text>No Classes Toady!! enjoy your day :)</Text>
     </View>
   );
 }

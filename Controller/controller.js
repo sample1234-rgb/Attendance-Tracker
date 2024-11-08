@@ -1,4 +1,6 @@
 import db from "../assets/db";
+import { users } from "../assets/db";
+const APITime = 1000;
 const getAttendence = async (id) => {
   return new Promise((res, rej) => {
     console.log("API: [GET] /attendences/" + id);
@@ -6,7 +8,7 @@ const getAttendence = async (id) => {
       res({
         data: db.find((item) => item.id === id),
       });
-    }, 1000);
+    }, APITime);
   })
     .then((res) => res?.data)
     .catch((e) => console.error(e));
@@ -18,7 +20,7 @@ const getAttendenceList = async () => {
       res({
         data: db,
       });
-    }, 1000);
+    }, APITime);
   })
     .then((res) => res?.data)
     .catch((e) => console.error(e));
@@ -27,9 +29,11 @@ const getAttendenceListByDay = async (day) => {
   return new Promise((res, rej) => {
     console.log("API: [GET] /attendences/" + day);
     setTimeout(() => {
-      const data = db.filter((lect) => lect.days.length && lect.days.includes(day.toLowerCase()));
+      const data = db.filter(
+        (lect) => lect.days.length && lect.days.includes(day.toLowerCase())
+      );
       res({ data: data });
-    }, 100);
+    }, APITime);
   })
     .then((res) => res.data)
     .catch((e) => console.error(e));
@@ -38,11 +42,11 @@ const updateAttendence = async (item) => {
   return new Promise((res, rej) => {
     console.log("API: [PUT] /attendences/" + item.id);
     setTimeout(() => {
-      db[db.findIndex(topic => item.id === topic.id)] = item;
+      db[db.findIndex((topic) => item.id === topic.id)] = item;
       res(true);
-    }, 1000);
+    }, APITime);
   })
-    .then(res => res)
+    .then((res) => res)
     .catch((e) => console.error(e));
 };
 const saveTopic = async (topic) => {
@@ -57,7 +61,7 @@ const saveTopic = async (topic) => {
       };
       db.push(newTopic);
       res(true);
-    }, 1000);
+    }, APITime);
   })
     .then((res) => res)
     .catch((e) => console.error(e));
@@ -66,11 +70,77 @@ const deleteTopic = async (id) => {
   return new Promise((res, rej) => {
     console.log("API: [DEL] /topic/" + id);
     setTimeout(() => {
-      db.splice(db.findIndex((topic) => topic.id === id), 1);
+      db.splice(
+        db.findIndex((topic) => topic.id === id),
+        1
+      );
       res(true);
-    }, 1000);
+    }, APITime);
   })
     .then((res) => res)
+    .catch((e) => console.error(e));
+};
+const login = async (userCred) => {
+  return new Promise((res, rej) => {
+    console.log("API: [GET] /user/login/" + userCred.id);
+    setTimeout(() => {
+      users.find((user) => {
+        if (
+          user.email === userCred.id ||
+          user.username === userCred.id ||
+          user.contact === userCred.id
+        ) {
+          if (user.password === userCred.password) {
+            res(user.id);
+          } else rej("Wrong Credentials");
+        } else rej("No User found");
+      });
+    }, APITime);
+  })
+    .then((res) => res)
+    .catch((e) => console.error(e));
+};
+const getUser = async (id) => {
+  return new Promise((res, rej) => {
+    console.log("API: [GET] /user/" + id);
+    setTimeout(() => {
+      res({
+        data: users.find((user) => user.id === id),
+      });
+    }, APITime);
+  })
+    .then((res) => res.data)
+    .catch((e) => console.error(e));
+};
+const getAllUsers = async () => {
+  return new Promise((res, rej) => {
+    console.log("API: [GET] /users");
+    setTimeout(() => {
+      res({
+        data: users,
+      });
+    }, APITime);
+  })
+    .then((res) => res?.data)
+    .catch((e) => console.error(e));
+};
+const createUser = async (newUserCred) => {
+  return new Promise((res, rej) => {
+    console.log("API: [POST] /users");
+    setTimeout(() => {
+      const ifExists = users.find(
+        user =>
+          user.email === newUserCred.id ||
+          user.username === newUserCred.id ||
+          user.contact === newUserCred.id
+      );
+      if(ifExists) rej('User already exists');
+      newUserCred.id = users.length.toString();
+      users.push(newUserCred);
+      res(true);
+    }, APITime);
+  })
+    .then((res) => res?.data)
     .catch((e) => console.error(e));
 };
 export default {
@@ -80,4 +150,8 @@ export default {
   updateAttendence,
   saveTopic,
   deleteTopic,
+  login,
+  getUser,
+  getAllUsers,
+  createUser,
 };

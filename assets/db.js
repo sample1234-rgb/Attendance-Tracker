@@ -1,10 +1,37 @@
+export const users = [
+  {
+    id: "1",
+    firstName: "admin",
+    password: "admin",
+    type: "super-admin",
+    lastName: "",
+    age: 1,
+    courses: [0, 1, 2],
+    dob: "01-02-3456",
+    email: "superadmin@hello.in",
+    username: "super-admin",
+    contact: "1234567891",
+  },
+  {
+    id: "2",
+    firstName: "admin",
+    password: "admin",
+    type: "super-admin",
+    lastName: "",
+    age: 1,
+    courses: [0, 1, 2],
+    dob: "01-02-3456",
+    email: "superadmin@hello.in",
+    username: "super-admin",
+    contact: "1234567891",
+  },
+];
 export default db = [
   {
     name: "Managing Workplace Behaviour",
     info: "Prof. Upasna",
     time: "09:00 AM ~ 10:30 AM",
     id: "1",
-    count: 1,
     days: ["monday", "tuesday"],
     markedDates: [
       "2024-09-30",
@@ -13,6 +40,8 @@ export default db = [
       "2024-10-08",
       "2024-10-14",
       "2024-10-15",
+      "2024-10-21",
+      "2024-10-22",
       "2024-10-28",
     ],
     missedDates: ["2024-10-29"],
@@ -23,7 +52,6 @@ export default db = [
     info: "Prof. Vijaya",
     time: "10:40 AM ~ 12:10 PM",
     id: "2",
-    count: 1,
     days: ["monday", "tuesday"],
     markedDates: [
       "2024-09-30",
@@ -32,6 +60,8 @@ export default db = [
       "2024-10-08",
       "2024-10-14",
       "2024-10-15",
+      "2024-10-21",
+      "2024-10-22",
       "2024-10-28",
     ],
     missedDates: ["2024-10-29"],
@@ -42,7 +72,6 @@ export default db = [
     info: "Prof. Vertika",
     time: "12:20 PM ~ 01:50 PM",
     id: "3",
-    count: 1,
     days: ["monday"],
     markedDates: [
       "2024-09-30",
@@ -51,6 +80,8 @@ export default db = [
       "2024-10-08",
       "2024-10-14",
       "2024-10-15",
+      "2024-10-21",
+      "2024-10-22",
       "2024-10-28",
     ],
     missedDates: ["2024-10-29"],
@@ -61,7 +92,6 @@ export default db = [
     info: "Prof. Venkateshwarlu",
     time: "03:40 PM ~ 05:10 PM",
     id: "4",
-    count: 1,
     days: ["monday", "tuesday"],
     markedDates: [
       "2024-09-30",
@@ -71,7 +101,7 @@ export default db = [
       "2024-10-15",
       "2024-10-28",
     ],
-    missedDates: ["2024-10-01","2024-10-29"],
+    missedDates: ["2024-10-01", "2024-10-29"],
     extraClasses: [],
   },
   {
@@ -79,7 +109,6 @@ export default db = [
     info: "Prof. Sushil",
     time: "09:00 AM ~ 10:30 AM",
     id: "5",
-    count: 1,
     days: ["wednesday", "thrusday"],
     markedDates: [
       "2024-10-02",
@@ -92,14 +121,13 @@ export default db = [
       "2024-10-24",
     ],
     missedDates: ["2024-10-30"],
-    extraClasses: ['2024-10-25'],
+    extraClasses: ["2024-10-25"],
   },
   {
     name: "AI/ML",
     info: "Prof. Purnima",
     time: "10:40 AM ~ 12:10 PM",
     id: "6",
-    count: 1,
     days: ["wednesday", "thrusday"],
     markedDates: [
       "2024-10-02",
@@ -111,7 +139,7 @@ export default db = [
       "2024-10-23",
       "2024-10-24",
     ],
-    missedDates: ["2024-10-01","2024-10-29"],
+    missedDates: ["2024-10-01", "2024-10-29"],
     extraClasses: [],
   },
 ];

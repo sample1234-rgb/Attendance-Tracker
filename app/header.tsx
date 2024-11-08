@@ -1,6 +1,11 @@
+import days, { Day } from "@/constants/days";
 import { View,Text } from "react-native";
 export default function HeaderComp() {
-    const today = new Date();
+
+  const today = new Date();
+  const t = days.find((day: Day) => day.key === today.getDay().toString())?.value ?? 'funday';
+  const dayOfWeek = t?.substring(0,1).toUpperCase() + t?.substring(1);
+  
   return (
     <View
       style={{
@@ -26,9 +31,10 @@ export default function HeaderComp() {
             margin: 5,
             backgroundColor: "#ffd0fa",
             borderRadius: 8,
+            width: 37,
           }}
         >
-          {today.getDate()}
+          {today.getDate().toString().padStart(2,'0')}
         </Text>
         <Text
           style={{
@@ -41,11 +47,11 @@ export default function HeaderComp() {
             zIndex: 2,
           }}
         >
-          {today.getMonth()+1}
+          {today.toString().substring(4,7)}
         </Text>
       </View>
       <Text> | </Text>
-      <Text> {today.getDay()}</Text>
+      <Text> {dayOfWeek}</Text>
     </View>
   );
 }
