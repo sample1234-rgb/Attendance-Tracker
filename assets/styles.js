@@ -27,7 +27,6 @@ export const filterBoxStyles = StyleSheet.create({
     display:'flex',
     flexWrap: 'wrap',
     flexDirection:'row',
-    flex: 1,
   },
   justifyCenter: {
     justifyContent: 'center'

@@ -3,20 +3,7 @@ export interface Day {
   key: string,
   value: string;
 }
-export type UserType = 'super-admin' | 'admin' | 'user' | null;
-export interface User {
-  id: string,
-  firstName: string,
-  lastName: string,
-  password: string,
-  type: UserType,
-  age: number,
-  courses: Array<number>,
-  dob: string,
-  email: string,
-  username: string,
-  contact: string, // number.length(10) 
-}
+
 export const TODAY = new Date();
 export const days = [
   { name: "S", key: "0", value: "sunday" },

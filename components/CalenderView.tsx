@@ -1,6 +1,6 @@
 import { Calendar, DateData } from "react-native-calendars";
 import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
-import { useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import ModalView from "./ModalView";
 import controller from "@/Controller/controller";
 import FilterBox from "./filterBox";
@@ -40,19 +40,17 @@ const extraDateStyle = {
 const selectedDisabledDateStyle = {
   color: "#00ff0050",
 };
-const changeDisabledSytle = (styled={}, apply=true, opacity='50' ) => {
-  Object.keys(styled).forEach(style => {
-    if(style.includes('color')){
+const changeDisabledSytle = (styled = {}, apply = true, opacity = "50") => {
+  Object.keys(styled).forEach((style) => {
+    if (style.includes("color")) {
       let temp = styled[style];
-      if( apply )
-        temp = temp + opacity;
-      else
-        temp = temp.substring(0,7);
+      if (apply) temp = temp + opacity;
+      else temp = temp.substring(0, 7);
       styled[style] = temp;
     }
-  })
+  });
   return styled;
-}
+};
 const findHolidays = (month = TODAY.getMonth() + 1) => {
   let firstDay = new Date(
     `${TODAY.getFullYear()}-${month.toString().padStart(2, "0")}-01`
@@ -110,26 +108,42 @@ const defineStyles = (styles: object, dates: Array<string>) => {
 
   return styles;
 };
-export default function CalenderView({ item }: { item: any }) {
+const todayStyles = () => {
+  let t = {};
+  let tt = TODAY.toISOString().substring(0, 10);
+  t[`${tt}`] = {
+    dot: true,
+    color: "#dfd00a",
+    startingDay: true,
+    endingDay: true,
+  };
+  return t;
+};
+export default function CalenderView({
+  item,
+  updateItem,
+}: {
+  item: any;
+  updateItem: Function;
+}) {
   const [modal, setModal] = useState(false);
   const [modalData, setModalData] = useState("");
-  const markedDates = item.markedDates.toString().split(",");
-  const missedDates = item.missedDates.toString().split(",");
-  const extraDates = item.extraClasses.toString().split(",");
+  const [calenderDays, setCalenderDays] = useState({});
+  const markedDates = item.markedDates.toString().split(",").filter((item: string) => item !== '');
+  const missedDates = item.missedDates.toString().split(",").filter((item: string) => item !== '');
+  const extraDates = item.extraClasses.toString().split(",").filter((item: string) => item !== '');
   const mrk = makeMarkStyling(markedDates, selectedDateStyle);
   const ms = makeMarkStyling(missedDates, missedDateStyle);
   const ed = makeMarkStyling(extraDates, extraDateStyle);
   const t = { ...mrk, ...ms };
   defineStyles(t, [...markedDates, ...missedDates]);
   const showModal = (day: DateData) => {
+    console.log(day);
     setModalData(day.dateString);
     setModal(true);
   };
   const updateDateStyle = (day: string, style: number) => {
     const newItem = item;
-    // const isMarked = markedDates.find((date: string) => date === day) !== undefined;
-    // const isMissed = missedDates.find((date: string) => date === day) !== undefined;
-    // const isExtra = extraDates.find((date: string) => date === day) !== undefined;
     newItem.markedDates = markedDates.filter((date: string) => date !== day);
     newItem.missedDates = missedDates.filter((date: string) => date !== day);
     newItem.extraClasses = extraDates.filter((date: string) => date !== day);
@@ -149,10 +163,14 @@ export default function CalenderView({ item }: { item: any }) {
     }
     controller
       .updateAttendence(newItem)
-      .then((res) => setModal(false))
+      .then(() => {
+        updateItem(newItem);
+        setModal(false);
+      })
       .catch((e) => console.error(e));
   };
   holidays = { ...holidays, ...findHolidays() };
+  // useLayoutEffect(() => setCalenderDays(), []);
   return (
     <View style={styles.calendarArea}>
       <Calendar
@@ -161,6 +179,7 @@ export default function CalenderView({ item }: { item: any }) {
           ...holidays,
           ...t,
           ...ed,
+          ...todayStyles(),
         }}
         onDayPress={(day: DateData) => showModal(day)}
         theme={{

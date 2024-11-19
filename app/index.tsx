@@ -1,40 +1,29 @@
 import CardListView from "@/components/CardListView";
 import ModalView from "@/components/ModalView";
-import { useEffect, useLayoutEffect, useState } from "react";
-import {
-  Text,
-  View,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  Button,
-  Platform,
-  Switch,
-} from "react-native";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { View, StyleSheet, Switch, Text, Alert } from "react-native";
 import { FlatList, GestureHandlerRootView } from "react-native-gesture-handler";
 import controller from "@/Controller/controller";
-import {
-  DateTimePickerAndroid,
-  DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
 import NotFound from "@/components/notFound";
-import Form from "@/components/Form";
-import { Stack, useNavigation, Link } from "expo-router";
+import { useNavigation, Link } from "expo-router";
 import HeaderComp from "./header";
-import Topic from "@/constants/DBClass";
-import days, { User } from "@/constants/days";
+import { Topic, UserCred, User } from "@/constants/DBClass";
+import days, { TODAY } from "@/constants/days";
 import UserForm, { UserLoginForm } from "@/components/UserForm";
-import MultiFilter from "@/components/MultiFilter";
-interface UserCred {
-  id: string;
-  password: string;
-}
+import { filterBoxStyles } from "@/assets/styles";
+import { Toast, toast } from "@/components/Toast";
+import Divider from "@/components/Divider";
+import CustomButton from "@/components/CustomButton";
+
 export default function Index() {
   const navigator = useNavigation();
   const [topicList, setTopicList] = useState([]);
   const [isEnabled, setIsEnabled] = useState(false);
   const [modalShow, setModalShow] = useState(false);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState({});
+  const [isLogin, setIsLogin] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const toastRef = useRef<toast>();
 
   useEffect(() => {
     navigator.setOptions({ title: "Today's Schedule" });
@@ -42,25 +31,29 @@ export default function Index() {
       (item) => item.key === new Date().getDay().toString()
     )?.value;
     controller
-      .getAttendenceListByDay('monday')
-      .then((res) => setTopicList(res));
-  }, [isEnabled, navigator]);
+      .getAttendenceListByDay("monday")
+      .then((res) => {
+        setTopicList(res);
+        setToastMessage("Successful");
+        toastRef.current?.open("success");
+      })
+      .catch((e) => {
+        setToastMessage(e);
+        toastRef.current?.open("error");
+      });
+  }, [isEnabled]);
 
   const autoIncrement = async () => {
     if (!isEnabled) {
       const promises = topicList.map((item: Topic) => {
-        const d = new Date().toISOString().substring(0, 10);
-        const newItem = { ...item };
-        if (canAddDate(item, d)) {
-          newItem.count += 1;
-          newItem.markedDates = [...item.markedDates, d];
-        }
-        controller.updateAttendence(newItem);
+        const d = TODAY.toISOString().substring(0, 10);
+        if (canAddDate(item, d)) item.markedDates.push(d);
+        return controller.updateAttendence(item);
       });
       Promise.allSettled(promises)
         .then((results) => {
           let allUpdated = results.reduce(
-            (acc, res) => acc && res?.value,
+            (acc, res: any) => acc && res?.value,
             true
           );
           allUpdated && setIsEnabled(!isEnabled);
@@ -68,13 +61,24 @@ export default function Index() {
         .catch((e) => console.error(e));
     } else setIsEnabled(!isEnabled);
   };
-
-  // const pressHandler = () => navigator.navigate('/dummy');
-
+  const updateAttendence = (status: string, message?: string) => {
+    switch (status) {
+      case "success":
+        setToastMessage("Successful");
+        toastRef.current?.open("success");
+        break;
+      case "error":
+        setToastMessage(message ?? '');
+        toastRef.current?.open("error");
+        break;
+      default:
+        break;
+    }
+  };
   const canAddDate = (topic: Topic, date: string) => {
     const newDayNumber = new Date(date).getDay().toString();
     const newDay = days.filter((day) => day.key === newDayNumber)[0].value;
-    return new Boolean(topic.days.includes(newDay));
+    return newDay && !topic.days.includes(date);
   };
 
   const markAbsent = () => {
@@ -82,58 +86,49 @@ export default function Index() {
       const d = new Date().toISOString().substring(0, 10);
       const newItem = { ...item };
       if (canAddDate(item, d)) newItem.missedDates = [...item.missedDates, d];
-      controller.updateAttendence(newItem);
+      return controller.updateAttendence(newItem);
     });
     Promise.allSettled(promises)
       .then((results) => {
         let allUpdated = results.reduce(
-          (acc: Boolean, res) => acc && res?.value,
+          (acc: Boolean, res: any) => acc && res?.value,
           true
         );
         allUpdated && setIsEnabled(!isEnabled);
       })
       .catch((e) => console.error(e));
   };
-  // markAbsent();
   const login = async (userCred: UserCred) => {
     await controller
       .login(userCred)
-      .then((res) =>
+      .then((resp) =>
         controller
-          .getUser(res)
+          .getUser(resp)
           .then((res) => {
             setUser(res);
             setModalShow(false);
+            toastRef.current?.open("success");
+            // localStorage.setItem("user", JSON.stringify(res));
           })
           .catch((e) => console.error(e))
       )
       .catch((e) => console.error(e));
-    // console.table(user);
   };
   const signUp = async (userCred: User) => {
     await controller
-      .createUser(userCred)
-      .then((res) => setUser(userCred))
+      .generateUID()
+      .then((res) => (userCred.id = (res + 1).toString()))
       .catch((e) => console.error(e));
-    console.table(user);
+    await controller
+      .createUser(userCred)
+      .then((res) => {
+        setUser(userCred);
+        setModalShow(!res);
+        toastRef.current?.open("success");
+        // localStorage.setItem("user", JSON.stringify(userCred));
+      })
+      .catch((e) => console.error(e));
   };
-  // login({
-  //   password: "admin",
-  //   id: "superadmin@hello.in",
-  // });
-  // signUp({
-  //   id: "3",
-  //   firstName: "Aadmin",
-  //   password: "Aadmin",
-  //   type: "admin",
-  //   lastName: "",
-  //   age: 1,
-  //   courses: [0, 1],
-  //   dob: "01-02-3456",
-  //   email: "AAsuperadmin@hello.in",
-  //   username: "sAuper-admin",
-  //   contact: "1234567891",
-  // })
   return (
     <>
       <HeaderComp />
@@ -143,7 +138,16 @@ export default function Index() {
             flex: 1,
           }}
         >
-          <Switch value={isEnabled} onValueChange={autoIncrement} />
+          <View
+            style={{
+              ...filterBoxStyles.flexContainer,
+              justifyContent: "space-between",
+              marginHorizontal: 5,
+            }}
+          >
+            <Link href={{ pathname: "/timetable" }}>Go to Timetable</Link>
+            <Switch value={isEnabled} onValueChange={autoIncrement} />
+          </View>
           <GestureHandlerRootView style={styles.flexBox}>
             <FlatList
               style={{ width: "100%" }}
@@ -153,30 +157,47 @@ export default function Index() {
                 <CardListView
                   props={item}
                   addAttendence={controller.updateAttendence}
+                  onUpdate={updateAttendence}
                 />
               )}
+              ItemSeparatorComponent={() => <Divider />}
+              ListFooterComponent={() => <Divider />}
+              ListHeaderComponent={() => <Divider />}
             />
           </GestureHandlerRootView>
-
           <ModalView
             visible={modalShow}
             modalCloseHandler={() => setModalShow(false)}
           >
-            <Form onSubmit={controller.saveTopic} />
-            {/* <UserLoginForm onSubmit={login} /> */}
+            {/* <Form onSubmit={controller.saveTopic} /> */}
+            {isLogin ? (
+              <UserLoginForm
+                onSubmit={login}
+                changeRequest={() => setIsLogin(false)}
+              />
+            ) : (
+              <UserForm
+                onSubmit={signUp}
+                changeRequest={() => setIsLogin(true)}
+              />
+            )}
           </ModalView>
-          {/* <MultiFilter listOfItems={['1','2','3']}/> */}
-          <Button onPress={() => setModalShow(true)} title="Add Lecture" />
-          <Link href={{ pathname: "/timetable" }}>Go to Timetable</Link>
-          {user === null && (
-            <Button
-              onPress={() => setModalShow(true)}
-              title="Sign In / Sign Up"
-            />
-          )}
+          <CustomButton
+            title="Add Lecture"
+            onPress={() => setModalShow(true)}
+          />
+          <Toast ref={toastRef}>
+            <Text>{toastMessage}</Text>
+          </Toast>
         </View>
       ) : (
         <NotFound />
+      )}
+      {user && (
+        <CustomButton
+          onPress={() => setModalShow(true)}
+          title="Sign In / Sign Up"
+        />
       )}
     </>
   );
@@ -199,5 +220,6 @@ const styles = StyleSheet.create({
     width: "100%",
     justifyContent: "center",
     alignItems: "center",
+    marginTop: 5,
   },
 });

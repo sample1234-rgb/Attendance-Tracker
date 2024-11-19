@@ -20,6 +20,7 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import CalenderView from "@/components/CalenderView";
 import FilterBox from "@/components/filterBox";
 import { filterBoxStyles } from "@/assets/styles";
+import { Topic } from "@/constants/DBClass";
 
 const daysOfWeek = days;
 interface Counter {
@@ -27,18 +28,27 @@ interface Counter {
   text: string;
   count: number;
 }
-interface AlertType{
+interface AlertType {
   text: string;
   onPress: Function;
 }
 interface AlertItem {
-    title: string;
-    message: string,
-    options: Array<AlertType>;
+  title: string;
+  message: string;
+  options: Array<AlertType>;
 }
 export default function LectureDetails() {
   const navigator = useNavigation();
-  const [topic, setTopic] = useState(useLocalSearchParams());
+  const [topic, setTopic] = useState({
+    name: "",
+    info: "",
+    time: "",
+    id: "",
+    days: new Array<string>(),
+    markedDates: new Array<string>(),
+    missedDates: new Array<string>(),
+    extraClasses: new Array<string>(),
+  });
   const [days, setDays] = useState(new Array<string>());
   const [editMode, setEditMode] = useState(false);
   const [buttonTitle, setButtonTitle] = useState("Add Start Time");
@@ -55,43 +65,73 @@ export default function LectureDetails() {
       { text: "No", onPress: () => {} },
     ],
   });
-
+  const [counters, setCounters] = useState(new Array<Counter>());
+  const temp = useLocalSearchParams()[0].toString();
+  // useLayoutEffect(() => {
+  //   if (topic) {
+  //     controller
+  //       .getAttendence(temp)
+  //       .then((res) => {
+  //         navigator.setOptions({ title: res.name });
+  //         setTopic(res);
+  //         setDays(res.days.toString().split(","));
+  //         let time = res.time.toString().split(" ~ ");
+  //         setStartTime(handleTime(time[0]));
+  //         setEndTime(handleTime(time[1]));
+  //         setInputVal(res.info.toString());
+  //         setCounters([
+  //           {
+  //             key: "0",
+  //             text: "Attended",
+  //             count: res.markedDates.toString().split(",").length,
+  //           },
+  //           {
+  //             key: "1",
+  //             text: "Missed",
+  //             count: res.missedDates.toString().split(",").length,
+  //           },
+  //           {
+  //             key: "2",
+  //             text: "Extra",
+  //             count: res.extraClasses.toString().split(",").length,
+  //           },
+  //         ]);
+  //       })
+  //       .catch((e) => console.error(e));
+  //   }
+  // }, [topic]);
   useEffect(() => {
-    if (topic) {
-      navigator.setOptions({ title: topic.name });
-      setDays(topic.days.toString().split(","));
-      let time = topic.time.toString().split(" ~ ");
-      const handleTime = (tiem: string) => {
-        let t = tiem.substring(0, 2);
-        if (tiem.substring(tiem.length - 2) === "AM" && t === "12") t = "00";
-        else if (tiem.substring(tiem.length - 2) === "PM" && t !== "12")
-          t = (parseInt(t) + 12).toString();
-        tiem = t + tiem.substring(2, tiem.length - 2);
-        return tiem.trim();
-      };
-      setStartTime(handleTime(time[0]));
-      setEndTime(handleTime(time[1]));
-      setInputVal(topic.info.toString());
-    }
+    controller
+      .getAttendence(temp)
+      .then((res) => {
+        navigator.setOptions({ title: res.name });
+        setTopic(res);
+        setDays(res.days.toString().split(","));
+        let time = res.time.toString().split(" ~ ");
+        setStartTime(handleTime(time[0]));
+        setEndTime(handleTime(time[1]));
+        setInputVal(res.info.toString());
+        setCounters([
+          {
+            key: "0",
+            text: "Attended",
+            count: res.markedDates.toString().split(",").length,
+          },
+          {
+            key: "1",
+            text: "Missed",
+            count: res.missedDates.toString().split(",").length,
+          },
+          {
+            key: "2",
+            text: "Extra",
+            count: res.extraClasses.toString().split(",").length,
+          },
+        ]);
+      })
+      .catch((e) => console.error(e));
+    console.log("here");
   }, [topic]);
-
-  const counters = [
-    {
-      key: "0",
-      text: "Attended",
-      count: topic.markedDates.toString().split(",").length,
-    },
-    {
-      key: "1",
-      text: "Missed",
-      count: topic.missedDates.toString().split(",").length,
-    },
-    {
-      key: "2",
-      text: "Extra",
-      count: topic.extraClasses.toString().split(",").length,
-    },
-  ];
   const toggleEditMode = (mode: Boolean) => setEditMode(mode.valueOf());
   const extractLocaleTime = (timeVar: String) => {
     return parseInt(timeVar?.substring(0, 2)) > 12
@@ -189,25 +229,39 @@ export default function LectureDetails() {
       console.log(e);
     }, 500);
   };
-
+  const handleTime = (tiem: string) => {
+    let t = tiem.substring(0, 2);
+    if (tiem.substring(tiem.length - 2) === "AM" && t === "12") t = "00";
+    else if (tiem.substring(tiem.length - 2) === "PM" && t !== "12")
+      t = (parseInt(t) + 12).toString();
+    tiem = t + tiem.substring(2, tiem.length - 2);
+    return tiem.trim();
+  };
+  const updateItem = (newTopic: Topic) => {
+    setTopic(newTopic);
+    setCounters([
+      {
+        key: "0",
+        text: "Attended",
+        count: newTopic.markedDates.length,
+      },
+      {
+        key: "1",
+        text: "Missed",
+        count: newTopic.missedDates.length,
+      },
+      {
+        key: "2",
+        text: "Extra",
+        count: newTopic.extraClasses.length,
+      },
+    ]);
+  };
   return (
     <View style={{ flex: 1 }}>
-      { editMode ? (
-        <View
-          style={{
-            padding: 10,
-            backgroundColor: "#abcdef80",
-            margin: 5,
-            borderRadius: 10,
-          }}
-        >
-          <View
-            style={{
-              ...styles.flexContainer,
-              marginVertical: 10,
-              justifyContent: "space-between",
-            }}
-          >
+      {editMode ? (
+        <View style={styles.courseInformation}>
+          <View style={styles.formRecord}>
             <Text style={styles.field}>Course Title:</Text>
             <TextInput
               style={styles.textInput}
@@ -215,13 +269,7 @@ export default function LectureDetails() {
               onChangeText={(e) => typingHandler(e)}
             />
           </View>
-          <View
-            style={{
-              ...styles.flexContainer,
-              marginVertical: 10,
-              justifyContent: "space-between",
-            }}
-          >
+          <View style={styles.formRecord}>
             <Text style={styles.field}>Course Instuctor:</Text>
             <TextInput
               style={styles.textInput}
@@ -229,13 +277,7 @@ export default function LectureDetails() {
               onChangeText={(e) => typingHandler(e)}
             />
           </View>
-          <View
-            style={{
-              ...styles.flexContainer,
-              marginVertical: 10,
-              justifyContent: "space-between",
-            }}
-          >
+          <View style={styles.formRecord}>
             <Text style={styles.field}>Timings:</Text>
             {Platform.OS === "web" ? (
               <View style={styles.flexContainer}>
@@ -263,106 +305,8 @@ export default function LectureDetails() {
               </>
             )}
           </View>
-          <View
-            style={{
-              ...styles.flexContainer,
-              marginVertical: 10,
-              justifyContent: "space-between",
-            }}
-          >
-            <Text style={styles.field}>Attended: </Text>
-            <FilterBox>
-              {counters.map((item: Counter) => (
-                <TouchableOpacity>
-                  <Text>{item.count}</Text>
-                </TouchableOpacity>
-              ))}
-            </FilterBox>
-          </View>
-          <View
-            style={{
-              ...styles.flexContainer,
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Text style={styles.field}>Assigned: </Text>
-            <View
-              style={{
-                padding: 5,
-                width: "fit-content",
-              }}
-            >
-              <View style={styles.flexContainer}>
-                {daysOfWeek.map((item) => {
-                  return (
-                    <TouchableOpacity
-                      key={(item) => item.key}
-                      style={{
-                        ...styles.day,
-                        borderColor: days.includes(item.value)
-                          ? "blue"
-                          : "#333",
-                        backgroundColor: days.includes(item.value)
-                          ? "#ddd"
-                          : "",
-                      }}
-                      onPress={() => handleDay(item.value)}
-                    >
-                      <center><Text>{item.name}</Text></center>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-          </View>
-          <View style={{ ...styles.flexContainer, justifyContent: "flex-end" }}>
-            <View style={{ marginLeft: 5 }}>
-              <Button onPress={saveChanges} title="Save" />
-            </View>
-            <View style={{ marginLeft: 5 }}>
-              <Button onPress={revertChanges} title="Cancel" />
-            </View>
-          </View>
-        </View>
-      ) : (
-        <View
-          style={{
-            padding: 5,
-            backgroundColor: "#abcdef80",
-            margin: 5,
-            borderRadius: 10,
-          }}
-        >
-          <View
-            style={{
-              ...styles.flexContainer,
-              marginVertical: 10,
-              justifyContent: "space-between",
-            }}
-          >
-            <Text style={styles.field}>Course Instuctor: </Text>
-            <Text>{topic.info}</Text>
-          </View>
-          <View
-            style={{
-              ...styles.flexContainer,
-              marginVertical: 10,
-              justifyContent: "space-between",
-            }}
-          >
-            <Text style={styles.field}>Timings: </Text>
-            <Text>{topic.time}</Text>
-          </View>
-          <View
-            style={{
-              ...styles.flexContainer,
-              marginVertical: 10,
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Text style={styles.field}>Attended:</Text>
+          <View style={styles.formRecord}>
+            <Text style={styles.field}>Classes: </Text>
             <FilterBox>
               {counters.map((item: Counter) => {
                 const currentStyle =
@@ -389,13 +333,79 @@ export default function LectureDetails() {
               })}
             </FilterBox>
           </View>
-          <View
-            style={{
-              ...styles.flexContainer,
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
+          <View style={styles.formRecord}>
+            <Text style={styles.field}>Assigned: </Text>
+            <View style={styles.dayView}>
+              <View style={styles.flexContainer}>
+                {daysOfWeek.map((item) => {
+                  return (
+                    <TouchableOpacity
+                      style={{
+                        ...styles.day,
+                        borderColor: days.includes(item.value)
+                          ? "blue"
+                          : "#333",
+                        backgroundColor: days.includes(item.value)
+                          ? "#ddd"
+                          : "",
+                      }}
+                      onPress={() => handleDay(item.value)}
+                    >
+                      <Text style={{ alignSelf: "center" }}>{item.name}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          </View>
+          <View style={styles.actions}>
+            <View style={{ marginLeft: 5 }}>
+              <Button onPress={saveChanges} title="Save" />
+            </View>
+            <View style={{ marginLeft: 5 }}>
+              <Button onPress={revertChanges} title="Cancel" />
+            </View>
+          </View>
+        </View>
+      ) : (
+        <View style={styles.courseInformation}>
+          <View style={styles.formRecord}>
+            <Text style={styles.field}>Course Instuctor: </Text>
+            <Text>{topic.info}</Text>
+          </View>
+          <View style={styles.formRecord}>
+            <Text style={styles.field}>Timings: </Text>
+            <Text>{topic.time}</Text>
+          </View>
+          <View style={styles.formRecord}>
+            <Text style={styles.field}>Classes:</Text>
+            <FilterBox>
+              {counters.map((item: Counter) => {
+                const currentStyle =
+                  item.key === "0"
+                    ? {
+                        ...filterBoxStyles.flexItem,
+                        ...filterBoxStyles.activate,
+                      }
+                    : filterBoxStyles.flexItem;
+                return (
+                  <>
+                    <TouchableOpacity style={currentStyle}>
+                      <Text>
+                        {item.text}: {item.count}
+                      </Text>
+                    </TouchableOpacity>
+                    {item.key === (counters.length - 1).toString() ? (
+                      <></>
+                    ) : (
+                      <hr />
+                    )}
+                  </>
+                );
+              })}
+            </FilterBox>
+          </View>
+          <View style={styles.formRecord}>
             <Text style={styles.field}>Assigned: </Text>
             <View style={styles.dayView}>
               <View style={styles.flexContainer}>
@@ -412,14 +422,14 @@ export default function LectureDetails() {
                           : "",
                       }}
                     >
-                      <center><Text>{item.name}</Text></center>
+                      <Text style={{ alignSelf: "center" }}>{item.name}</Text>
                     </TouchableOpacity>
                   );
                 })}
               </View>
             </View>
           </View>
-          <View style={{ ...styles.flexContainer, justifyContent: "flex-end" }}>
+          <View style={styles.actions}>
             <View style={{ padding: 4 }}>
               <MaterialCommunityIcons
                 name="application-edit-outline"
@@ -438,9 +448,12 @@ export default function LectureDetails() {
             </View>
           </View>
         </View>
-      ) }
+      )}
       <View style={styles.flexContainer}>
-        <CalenderView item={topic} />
+        <CalenderView
+          item={topic}
+          updateItem={(newTopic: any) => updateItem(newTopic)}
+        />
         <View style={styles.flexContainer}>
           <View>
             <MaterialCommunityIcons name="image-text" size={24} color="black" />
@@ -461,7 +474,8 @@ export default function LectureDetails() {
         <View style={{ padding: 5, margin: 5 }}>
           <Text>{alertProps?.message ?? "HI"}</Text>
           <View style={styles.flexContainer}>
-            {alertProps?.options.map((option: Object, index: number) => (
+            {/** TODO fix 'any' type cast here */}
+            {alertProps?.options.map((option: any, index: number) => (
               <Button
                 key={index.toString()}
                 onPress={option?.onPress}
@@ -475,6 +489,26 @@ export default function LectureDetails() {
   );
 }
 const styles = StyleSheet.create({
+  courseInformation: {
+    padding: 10,
+    backgroundColor: "#abcdef80",
+    margin: 5,
+    borderRadius: 10,
+  },
+  formRecord: {
+    display: "flex",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginVertical: 10,
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  actions: {
+    display: "flex",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "flex-end",
+  },
   day: {
     width: 35,
     paddingHorizontal: 10,

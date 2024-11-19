@@ -84,21 +84,18 @@ const login = async (userCred) => {
   return new Promise((res, rej) => {
     console.log("API: [GET] /user/login/" + userCred.id);
     setTimeout(() => {
-      users.find((user) => {
-        if (
-          user.email === userCred.id ||
-          user.username === userCred.id ||
-          user.contact === userCred.id
-        ) {
+      let u = users.find((user) => {
+        if (user.email === userCred.id || user.username === userCred.id) {
           if (user.password === userCred.password) {
             res(user.id);
           } else rej("Wrong Credentials");
-        } else rej("No User found");
+        }
       });
+      if (u === undefined) rej("No User found");
     }, APITime);
   })
     .then((res) => res)
-    .catch((e) => console.error(e));
+    .catch((rej) => rej);
 };
 const getUser = async (id) => {
   return new Promise((res, rej) => {
@@ -124,23 +121,43 @@ const getAllUsers = async () => {
     .then((res) => res?.data)
     .catch((e) => console.error(e));
 };
+const generateUID = async () => {
+  return new Promise((res, rej) => {
+    console.log("API: [POST] /users/id");
+    setTimeout(() => {
+      res(users.length);
+    }, APITime);
+  })
+    .then((res) => res)
+    .catch((rej) => rej);
+};
+const generateTopicID = async () => {
+  return new Promise((res, rej) => {
+    console.log("API: [POST] /attendence/id");
+    setTimeout(() => {
+      res(db.length);
+    }, APITime);
+  })
+    .then((res) => res)
+    .catch((rej) => rej);
+};
 const createUser = async (newUserCred) => {
   return new Promise((res, rej) => {
     console.log("API: [POST] /users");
     setTimeout(() => {
       const ifExists = users.find(
-        user =>
+        (user) =>
           user.email === newUserCred.id ||
           user.username === newUserCred.id ||
           user.contact === newUserCred.id
       );
-      if(ifExists) rej('User already exists');
+      if (ifExists) rej("User already exists");
       newUserCred.id = users.length.toString();
       users.push(newUserCred);
       res(true);
     }, APITime);
   })
-    .then((res) => res?.data)
+    .then((res) => res)
     .catch((e) => console.error(e));
 };
 export default {
@@ -154,4 +171,6 @@ export default {
   getUser,
   getAllUsers,
   createUser,
+  generateUID,
+  generateTopicID,
 };

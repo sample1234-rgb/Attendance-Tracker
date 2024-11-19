@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { createRef, useState } from "react";
 import { StyleSheet, Text, Pressable, View } from "react-native";
 interface FilterStyles {
   setBgColor: string;
@@ -15,24 +15,34 @@ export default function MultiFilter({
     setBdColor: "#ddd",
     unsetBdColor: "",
   },
+  editMode = true,
 }: {
   listOfItems: Array<any>;
   gap: number;
   customStyle: FilterStyles;
+  editMode?: boolean;
 }) {
   const [isSelected, setIsSelected] = useState(new Array<string>());
-  const [bdcolorSet, bdcolorUnset] = [customStyle.setBgColor, customStyle.unsetBgColor]; // TODO: make it dynamic
-  const [bgcolorSet, bgcolorUnset] = [customStyle.setBdColor, customStyle.unsetBdColor]; // TODO: make it dynamic
+  const [bdcolorSet, bdcolorUnset] = [
+    customStyle.setBgColor,
+    customStyle.unsetBgColor,
+  ]; // TODO: make it dynamic
+  const [bgcolorSet, bgcolorUnset] = [
+    customStyle.setBdColor,
+    customStyle.unsetBdColor,
+  ]; // TODO: make it dynamic
+  const _MultiFilterRef = createRef<View>();
   const pressHandler = (key: string) => {
-    setIsSelected(
-      isSelected.includes(key)
-        ? isSelected.filter((item) => item !== key)
-        : [...isSelected, key]
-    );
+    if (editMode)
+      setIsSelected(
+        isSelected.includes(key)
+          ? isSelected.filter((item) => item !== key)
+          : [...isSelected, key]
+      );
   };
   const getFilteredItems = () => isSelected; // need to pass to parent
   return (
-    <View style={styles.boxContainer}>
+    <View style={styles.boxContainer} ref={_MultiFilterRef}>
       <View style={styles.flexContainer}>
         {listOfItems.map((item: string, index: number) => {
           return (
@@ -50,9 +60,7 @@ export default function MultiFilter({
               }}
               onPress={() => pressHandler(item)}
             >
-              <center>
-                <Text>{item}</Text>
-              </center>
+              <Text style={{ alignSelf: "center" }}>{item}</Text>
             </Pressable>
           );
         })}

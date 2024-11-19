@@ -1,4 +1,4 @@
-import { Text, View, StyleSheet } from "react-native";
+import { Text, View, StyleSheet, Alert } from "react-native";
 import { TouchableOpacity } from "react-native-gesture-handler";
 import { useEffect, useLayoutEffect, useState } from "react";
 import ModalView from "./ModalView";
@@ -6,13 +6,20 @@ import { Link } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { filterBoxStyles } from "@/assets/styles";
 import Topic from "@/constants/DBClass";
-
+import { TODAY } from "@/constants/days";
+/* TODO fix any */
 interface funct {
-  props: Object;
+  props: any;
   addAttendence: any;
+  onUpdate: any;
 }
 
-export default function CardListView({ props, addAttendence }) {
+export default function CardListView({
+  props,
+  addAttendence,
+  onUpdate,
+}: funct) {
+  const RefreshTime = 24 * 60 * 60 * 100;
   const { name: topicName, info: topicProp, time: topicDuration } = props;
   const [isAttended, setIsAttended] = useState(false);
   const [itemCount, setItemCount] = useState(0);
@@ -30,19 +37,49 @@ export default function CardListView({ props, addAttendence }) {
           new Date().toISOString().substring(0, 10),
         ],
       })
-        .then((res) => {
-          setItemCount(itemCount + 1);
-          setCurrStyle({...styles.Counter,...styles.ActiveCounter});
-          setCurrTextStyle({...styles.CounterText,...styles.ActiveCounterText});
+        .then((res: boolean) => {
+          if (res) {
+            setItemCount(itemCount + 1);
+            setCurrStyle({ ...styles.Counter, ...styles.ActiveCounter });
+            setCurrTextStyle({
+              ...styles.CounterText,
+              ...styles.ActiveCounterText,
+            });
+            onUpdate("success");
+          }
+          return false;
         })
-        .catch((e) => console.error(e))
+        .catch((e: any) => {
+          onUpdate("error", e);
+          console.error(e);
+          return true;
+        })
     );
-    setTimeout(() => setIsAttended(false), 5000);
+    /* TODO fix any */
+    // automaticHandler();
+    setTimeout(() => setIsAttended(true), RefreshTime);
+  };
+  const automaticHandler = () => {
+    let t = new Date(
+      `${TODAY.getFullYear()}-${(TODAY.getMonth() + 1)
+        .toString()
+        .padStart(2, "0")}-${TODAY.getDate()
+        .toString()
+        .padStart(2, "0")}T${topicDuration
+        .toString()
+        .split(" ~ ")[1]
+        .substring(0, 5)}Z`
+    );
+    let tt = TODAY.valueOf() - t.valueOf();
+    if (tt < 0) {
+      setCurrStyle({ ...styles.Counter, ...styles.MissedCounter });
+      setCurrTextStyle({ ...styles.CounterText, ...styles.MissedCounterText });
+    }
   };
   return (
     <View style={styles.LectorItem}>
       <View style={styles.infoPanel}>
-        <Link href={{ pathname: "/lectureDetails", params: props }}>
+        <Link href={{ pathname: "/lectureDetails", params: props.id }}>
           <Text
             style={{
               fontSize: 18,
@@ -97,11 +134,6 @@ const styles = StyleSheet.create({
     ...filterBoxStyles.alignCenter,
     justifyContent: "space-between",
     padding: 5,
-    borderBottomColor: "black",
-    borderBottomWidth: 1,
-    borderStyle: "dashed",
-    // borderWidth: 1,
-    // marginBottom: 5,
   },
   Counter: {
     backgroundColor: "#a4a4a480",
@@ -123,7 +155,7 @@ const styles = StyleSheet.create({
     color: "green",
   },
   MissedCounter: {
-    backgroundColor: "#4be35180",
+    backgroundColor: "#ff454580",
   },
   MissedCounterText: {
     color: "red",

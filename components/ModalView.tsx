@@ -1,8 +1,19 @@
-import { Children, useEffect, useState } from "react";
 import { Modal, View, TouchableOpacity, StyleSheet, Text } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
-export default function ModalView({ visible, modalCloseHandler,height=200,width=200, children }) {
+export default function ModalView({
+  visible,
+  modalCloseHandler,
+  height = 200,
+  width = 200,
+  children,
+}: {
+  visible?: boolean | undefined;
+  modalCloseHandler: any;
+  height?: number;
+  width?: number;
+  children: any;
+}) {
   const modalHeight = height;
   const modalWidth = width;
   return (

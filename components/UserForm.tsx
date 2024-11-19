@@ -1,175 +1,156 @@
-import {
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  Button,
-  Platform,
-} from "react-native";
-import { useEffect, useState } from "react";
-import {
-  DateTimePickerAndroid,
-  DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
+import { StyleSheet, Text, View, Button, Platform } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { TODAY, User, UserRegister } from "@/constants/days";
+import { TextInputBox } from "./TextInputBox";
+import { DateHandler, dateHandler } from "./DateHandler";
+import CustomButton from "./CustomButton";
+import { Topic } from "@/constants/DBClass";
 
-export default function UserForm({ onSubmit }: { onSubmit: any }) {
-  let newTopic = {
-    name: "",
-    info: "",
-    timing: "",
+export default function UserForm({ onSubmit, changeRequest }: { onSubmit: any, changeRequest: any }) {
+  let newUser = {
+    firstName: "",
+    lastName: "",
+    password: "",
+    dob: Platform.OS === "web" ? TODAY.toISOString().substring(0, 10) : "",
+    email: "",
+    contact: "",
   };
-  // const [buttonTitle, setButtonTitle] = useState("Add Start Time");
-  // const [startTime, setStartTime] = useState("09:00");
-  // const [endTime, setEndTime] = useState("17:00");
-  // const [mobileTime, setMobileTime] = useState(0);
-  // const [day, setDay] = useState(new Array<string>());
-  const [date, setDate] = useState(new Date());
-  // const markDay = (selected: string) => {
-  //   let newDays = day.includes(selected)
-  //     ? day.filter(item => item !== selected)
-  //     : [...day, selected];
-  //   setDay(newDays);
-  // };
-  // function extractLocaleTime(timeVar: String) {
-  //   return parseInt(timeVar?.substring(0, 2)) > 12
-  //     ? (parseInt(timeVar?.substring(0, 2)) - 12).toString().padStart(2, "0") +
-  //         timeVar?.substring(2) +
-  //         " PM"
-  //     : timeVar + " AM";
-  // }
-  const saveTopic = () => {};
+  const safeStyles = {
+    firstName: styles.textInput,
+    lastName: styles.textInput,
+    password: styles.textInput,
+    dob: styles.textInput,
+    email: styles.textInput,
+    contact: styles.textInput,
+  };
+  const [errorList, setErrorList] = useState(safeStyles);
+  let confirmPass = "";
+  const saveTopic = () => {
+    Object.entries(newUser).some((key) => {
+      if (key[1].length === 0) {
+        console.error("Error Detected", key);
+        errorList[key[0]] = {
+          ...errorList[key[0]],
+          ...styles.error,
+        };
+        setErrorList({ ...errorList });
+        return;
+      }
+    });
+    if (newUser.password !== confirmPass) {
+      errorList.password = {
+        ...errorList.password,
+        ...styles.error,
+      };
+      setErrorList({ ...errorList });
+      return;
+    }
+    let age =
+      new Date(
+        TODAY.getTime() - new Date(newUser.dob).getTime()
+      ).getUTCFullYear() - 1970;
+
+    onSubmit({
+      ...newUser,
+      age: age,
+      type: "user",
+      courses: new Array<number>(),
+      id: "",
+    });
+  };
   const resetState = () => {
-    newTopic.name = newTopic.info = newTopic.timing = "";
+    Object.values(newUser).forEach((value) => (value = ""));
+    setErrorList(safeStyles);
   };
-  // const showMode = () => {
-  //   if (Platform.OS === "android")
-  //     DateTimePickerAndroid.open({
-  //       is24Hour: false,
-  //       onChange: (e, val) => {
-  //         let time = `${val?.getHours()}:${val?.getMinutes()}`;
-  //         if (mobileTime === 0) {
-  //           setStartTime(time);
-  //           setMobileTime(mobileTime + 1);
-  //           setButtonTitle("Add End Time");
-  //         } else if (mobileTime === 1) {
-  //           setEndTime(time);
-  //           setMobileTime(mobileTime + 1);
-  //           setButtonTitle(`${startTime}~${endTime}`);
-  //         }
-  //       },
-  //       mode: "time",
-  //       value: new Date(),
-  //     });
-  // };
-
-  const showMode = () => {
-    if (Platform.OS === "android")
-      DateTimePickerAndroid.open({
-        value: date,
-        onChange: (event: DateTimePickerEvent, selectedDate: Date) => setDate(selectedDate),
-        mode: "date",
-      });
-  };
-
   return (
     <View style={{ padding: 30 }}>
-      <Text style={{ fontSize: 24 }}><center>Register</center></Text>
-      <Text>First Name:</Text>
-      <TextInput
-        style={styles.textInput}
+      <Text style={{ fontSize: 24, alignSelf: "center" }}>Register</Text>
+      <TextInputBox
+        Label="First Name: "
+        style={errorList.firstName}
         placeholder="first name"
-        onChangeText={(e) => (newTopic.name = e)}
+        onChangeText={(e: string) => (newUser.firstName = e)}
+        selectTextOnFocus
       />
-      <Text>Last Name:</Text>
-      <TextInput
-        style={styles.textInput}
+      <TextInputBox
+        Label="Last Name:"
+        style={errorList.lastName}
         placeholder="last name"
-        // value={newTopic.info}
-        onChangeText={(e) => (newTopic.info = e)}
+        onChangeText={(e: string) => (newUser.lastName = e)}
       />
-      <Text>Email:</Text>
-      <TextInput
-        style={styles.textInput}
+      <TextInputBox
+        Label="Email:"
+        style={errorList.email}
         placeholder="email@email.com"
-        // value={newTopic.info}
-        onChangeText={(e) => (newTopic.info = e)}
+        onChangeText={(e: string) => (newUser.email = e)}
       />
-      <Text>contact Number:</Text>
-      <TextInput
-        style={styles.textInput}
-        placeholder="Mobile Number"
-        // value={newTopic.info}
-        onChangeText={(e) => (newTopic.info = e)}
+      <TextInputBox
+        Label="Contact Number:"
+        style={errorList.contact}
+        placeholder="xxx-xxx-xxxx"
+        onChangeText={(e: string) => (newUser.contact = e)}
       />
-      <Text>Enter Password:</Text>
-      <TextInput
+      <TextInputBox
+        Label="Enter Password:"
+        style={errorList.password}
+        placeholder="password"
+        type="password"
+        onChangeText={(e: string) => (newUser.password = e)}
+      />
+      <TextInputBox
+        Label="Re-enter Password:"
         style={styles.textInput}
         placeholder="password"
-        // value={newTopic.info}
-        onChangeText={(e) => (newTopic.info = e)}
+        type="password"
+        onChangeText={(e: string) => (confirmPass = e)}
       />
-      <Text>Re-enter Password:</Text>
-      <TextInput
-        style={styles.textInput}
-        placeholder="password"
-        // value={newTopic.info}
-        onChangeText={(e) => (newTopic.info = e)}
+      <DateHandler
+        title="Date of Birth:"
+        style={{ backgroundColor: "", color: "black", borderWidth: 1 }}
+        onChange={(e: string) => (newUser.dob = e)}
       />
-      <View>
-        <Text>Date of Birth:</Text>
-        {Platform.OS === "web" ? (
-          <>
-            <input type="date" onChange={(e) => console.log(e.target.value)} />
-          </>
-        ) : (
-          <>
-            <Button onPress={showMode} title="Enter date!" />
-          </>
-        )}
-        <Text>selected: {date.toLocaleString()}</Text>
-      </View>
-      <View style={{ paddingTop: 20 }}>
-        <Button onPress={saveTopic} title="Register" />
-      </View>
+      <CustomButton
+        onPress={saveTopic}
+        title="Register"
+        style={{ marginTop: 20 }}
+      />
+      <Text>Already have an account ? <Text style={styles.link} onPress={changeRequest}>Sign in</Text></Text>
     </View>
   );
 }
-export function UserLoginForm({ onSubmit }: { onSubmit: any }) {
+export function UserLoginForm({ onSubmit, changeRequest }: { onSubmit: any, changeRequest: any }) {
   let newLogin = { id: "", password: "" };
-  // const [userCred, setUserCred] = useState(null);
   let isError =
     newLogin === null || newLogin.id === "" || newLogin.password === "";
-  // useEffect(()=> {isError = newLogin.id === '' || newLogin.password === ''},[]);
   const doLogin = () => onSubmit(newLogin);
   return (
     <View style={{ padding: 30 }}>
-      <Text style={{ fontSize: 24 }}>
-        <center>Sign in</center>
-      </Text>
-
+      <Text style={{ fontSize: 24, alignSelf: "center" }}>Sign in</Text>
       <View style={{ marginTop: 10 }}>
-        <Text>username / Email:</Text>
-        <TextInput
+        <TextInputBox
+          Label="Username / Email:"
           style={styles.textInput}
           placeholder="email"
           keyboardType="email-address"
-          onChangeText={(e) => (newLogin.id = e)}
+          onChangeText={(e: string) => (newLogin.id = e)}
         />
       </View>
-
       <View style={{ marginTop: 10 }}>
-        <Text>Enter Password:</Text>
-        <TextInput
+        <TextInputBox
+          Label="Enter Password:"
           style={styles.textInput}
           placeholder="password"
           keyboardType="visible-password"
-          onChangeText={(e) => (newLogin.password = e)}
+          type="password"
+          onChangeText={(e: string) => (newLogin.password = e)}
         />
       </View>
-
-      <View style={{ marginTop: 20 }}>
-        <Button onPress={doLogin} title="Sign In" />
-      </View>
+      <CustomButton
+        onPress={doLogin}
+        title="Sign In"
+        style={{ marginTop: 20 }}
+      />
+      <Text>Didn't have an account ? <Text style={styles.link} onPress={changeRequest}>Create new</Text></Text>
     </View>
   );
 }
@@ -181,6 +162,7 @@ const styles = StyleSheet.create({
     borderStyle: "solid",
     borderColor: "black",
     paddingLeft: 5,
+    width: "100%",
   },
   day: {
     paddingHorizontal: 10,
@@ -197,4 +179,16 @@ const styles = StyleSheet.create({
   timeComponent: {
     width: 100,
   },
+  error: {
+    color: "red",
+    borderColor: "red",
+    scaleX: 1.05,
+  },
+  link: {
+    textDecorationLine:"underline",
+    color: 'grey',
+    cursor: 'pointer',
+    alignSelf: 'center',
+    marginTop: 10,
+  }
 });
